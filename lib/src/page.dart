@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:math';
+
 import 'package:flutter/widgets.dart';
 
 class PDFPage extends StatefulWidget {
@@ -33,6 +34,12 @@ class _PDFPageState extends State<PDFPage> {
     resolver.addListener((imgInfo, alreadyPainted) {
       if (!alreadyPainted) setState(() {});
     });
+    _resetZoom();
+  }
+
+  _resetZoom() {
+    _zoom = 1.0;
+    setState(() {});
   }
 
   final GlobalKey _key = GlobalKey();
@@ -241,11 +248,11 @@ class _ZoomableChildState extends AnimatedWidgetBaseState<_ZoomableChild> {
   Widget build(BuildContext context) {
     return Transform(
         alignment: Alignment.center,
-        origin: Offset(-_offset.evaluate(animation).dx,
-            -_offset.evaluate(animation).dy),
+        origin: Offset(
+            -_offset.evaluate(animation).dx, -_offset.evaluate(animation).dy),
         transform: Matrix4.identity()
-          ..translate(_offset.evaluate(animation).dx,
-              _offset.evaluate(animation).dy)
+          ..translate(
+              _offset.evaluate(animation).dx, _offset.evaluate(animation).dy)
           ..scale(_zoom.evaluate(animation), _zoom.evaluate(animation)),
         child: widget.child);
   }
