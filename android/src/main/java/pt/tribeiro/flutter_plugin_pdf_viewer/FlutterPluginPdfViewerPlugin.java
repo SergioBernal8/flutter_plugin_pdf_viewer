@@ -16,6 +16,8 @@ import io.flutter.plugin.common.MethodChannel;
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler;
 import io.flutter.plugin.common.MethodChannel.Result;
 import io.flutter.plugin.common.PluginRegistry.Registrar;
+import android.graphics.ColorMatrix;
+import android.graphics.ColorMatrixColorFilter;
 
 /**
  * FlutterPluginPdfViewerPlugin
@@ -34,17 +36,23 @@ public class FlutterPluginPdfViewerPlugin implements MethodCallHandler {
 
     @Override
     public void onMethodCall(final MethodCall call, final Result result) {
-        switch (call.method) {
-            case "getNumberOfPages":
-                result.success(getNumberOfPages((String) call.argument("filePath")));
-                break;
-            case "getPage":
-                result.success(getPage((String) call.argument("filePath"), (int) call.argument("pageNumber")));
-                break;
-            default:
-                result.notImplemented();
-                break;
-        }
+        Thread thread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                switch (call.method) {
+                    case "getNumberOfPages":
+                        result.success(getNumberOfPages((String) call.argument("filePath")));
+                        break;
+                    case "getPage":
+                        result.success(getPage((String) call.argument("filePath"), (int) call.argument("pageNumber")));
+                        break;
+                    default:
+                        result.notImplemented();
+                        break;
+                }
+            }
+        });
+        thread.start();
     }
 
     private String getNumberOfPages(String filePath) {
@@ -97,12 +105,11 @@ public class FlutterPluginPdfViewerPlugin implements MethodCallHandler {
             width = 2048;
             height = (int) (width / docRatio);
             Bitmap bitmap = Bitmap.createBitmap((int) width, (int) height, Bitmap.Config.ARGB_8888);
-
+            // Change background to white
             Canvas canvas = new Canvas(bitmap);
             canvas.drawColor(Color.WHITE);
-
+            // Render to bitmap
             page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY);
-
             try {
                 return createTempPreview(bitmap, filePath, pageNumber);
             } finally {
@@ -118,5 +125,4 @@ public class FlutterPluginPdfViewerPlugin implements MethodCallHandler {
 
         return null;
     }
-
 }
