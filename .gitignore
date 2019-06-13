@@ -3,5 +3,21 @@
 
 .packages
 .pub/
-
+.gradle
 build/
+
+.flutter-plugins
+coverage/
+.idea/
+pubspec.lock
+*.log
+ios/Podfile.lock
+ios/Pods
+.symlinks
+ServiceDefinitions.*
+GeneratedPluginRegistrant.*
+Generated.xcconfig
+*.iml
+local.properties
+ios/Runner.xcworkspace/xcuserdata
+*.framework

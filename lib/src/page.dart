@@ -31,9 +31,10 @@ class _PDFPageState extends State<PDFPage> {
   _repaint() {
     provider = FileImage(File(widget.imgPath));
     final resolver = provider.resolve(createLocalImageConfiguration(context));
-    resolver.addListener((imgInfo, alreadyPainted) {
+    final ImageListener onImage = (imgInfo, alreadyPainted) {
       if (!alreadyPainted) setState(() {});
-    });
+    };
+    resolver.addListener(ImageStreamListener(onImage));
     _resetZoom();
   }
 
