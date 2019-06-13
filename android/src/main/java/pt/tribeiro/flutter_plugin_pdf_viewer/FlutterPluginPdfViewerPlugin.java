@@ -5,6 +5,8 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.pdf.PdfRenderer;
 import android.os.Environment;
+import android.os.Handler;
+import android.os.Looper;
 import android.os.ParcelFileDescriptor;
 import android.util.Log;
 
@@ -24,7 +26,7 @@ import android.graphics.ColorMatrixColorFilter;
  */
 public class FlutterPluginPdfViewerPlugin implements MethodCallHandler {
     private static Registrar instance;
-
+    private static  Handler handler;
     /**
      * Plugin registration.
      */
@@ -32,11 +34,12 @@ public class FlutterPluginPdfViewerPlugin implements MethodCallHandler {
         final MethodChannel channel = new MethodChannel(registrar.messenger(), "flutter_plugin_pdf_viewer");
         instance = registrar;
         channel.setMethodCallHandler(new FlutterPluginPdfViewerPlugin());
+        handler = new Handler(Looper.getMainLooper());
     }
 
     @Override
     public void onMethodCall(final MethodCall call, final Result result) {
-        Thread thread = new Thread(new Runnable() {
+        handler.post(new Runnable() {
             @Override
             public void run() {
                 switch (call.method) {
@@ -52,7 +55,6 @@ public class FlutterPluginPdfViewerPlugin implements MethodCallHandler {
                 }
             }
         });
-        thread.start();
     }
 
     private String getNumberOfPages(String filePath) {
