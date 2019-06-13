@@ -4,6 +4,7 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.pdf.PdfRenderer;
+import android.os.AsyncTask;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
@@ -39,7 +40,7 @@ public class FlutterPluginPdfViewerPlugin implements MethodCallHandler {
 
     @Override
     public void onMethodCall(final MethodCall call, final Result result) {
-        Thread thread = new Thread(handler.post(new Runnable() {
+        AsyncTask.execute(new Runnable() {
             @Override
             public void run() {
                 switch (call.method) {
@@ -54,9 +55,7 @@ public class FlutterPluginPdfViewerPlugin implements MethodCallHandler {
                         break;
                 }
             }
-        }));
-        thread.start();
-
+        });
     }
 
     private String getNumberOfPages(String filePath) {
