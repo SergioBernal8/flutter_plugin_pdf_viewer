@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/widgets.dart';
-import 'package:flutter_advanced_networkimage/zoomable.dart';
+import 'package:flutter_plugin_pdf_viewer/zoomable/zoomable_widget.dart';
 
 class PDFPage extends StatefulWidget {
   final String imgPath;
