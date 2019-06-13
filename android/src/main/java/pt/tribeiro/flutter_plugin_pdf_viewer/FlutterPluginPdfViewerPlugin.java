@@ -13,11 +13,6 @@ import android.util.Log;
 
 import java.io.File;
 import java.io.FileOutputStream;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-import java.util.concurrent.RunnableFuture;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 import io.flutter.plugin.common.MethodCall;
 import io.flutter.plugin.common.MethodChannel;
@@ -45,64 +40,20 @@ public class FlutterPluginPdfViewerPlugin implements MethodCallHandler {
 
     @Override
     public void onMethodCall(final MethodCall call, final Result result) {
-
-        switch (call.method) {
-            case "getNumberOfPages":
-                result.success(getNumberOfPages((String) call.argument("filePath")));
-                break;
-            case "getPage": {
-
-                Future task = new RunnableFuture() {
-                    String page;
-                    @Override
-                    public void run() {
-                       page = getPage((String) call.argument("filePath"), (int) call.argument("pageNumber"));
-                    }
-
-                    @Override
-                    public boolean cancel(boolean mayInterruptIfRunning) {
-                        return false;
-                    }
-
-                    @Override
-                    public boolean isCancelled() {
-                        return false;
-                    }
-
-                    @Override
-                    public boolean isDone() {
-                        return false;
-                    }
-
-                    @Override
-                    public Object get() throws ExecutionException, InterruptedException {
-                        return page;
-                    }
-
-                    @Override
-                    public Object get(long timeout, TimeUnit unit) throws ExecutionException, InterruptedException, TimeoutException {
-                        return page;
-                    }
-                };
-                ((RunnableFuture) task).run();
-                try {
-                    result.success(task.get());
-                } catch (ExecutionException e) {
-                    e.printStackTrace();
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-                break;
-            }
-            default:
-                result.notImplemented();
-                break;
-        }
-
         handler.post(new Runnable() {
             @Override
             public void run() {
-
+                switch (call.method) {
+                    case "getNumberOfPages":
+                        result.success(getNumberOfPages((String) call.argument("filePath")));
+                        break;
+                    case "getPage":
+                        result.success(getPage((String) call.argument("filePath"), (int) call.argument("pageNumber")));
+                        break;
+                    default:
+                        result.notImplemented();
+                        break;
+                }
             }
         });
     }
