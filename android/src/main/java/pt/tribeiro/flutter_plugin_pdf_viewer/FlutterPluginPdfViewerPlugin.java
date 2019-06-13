@@ -39,7 +39,7 @@ public class FlutterPluginPdfViewerPlugin implements MethodCallHandler {
 
     @Override
     public void onMethodCall(final MethodCall call, final Result result) {
-        handler.post(new Runnable() {
+        Thread thread = new Thread(handler.post(new Runnable() {
             @Override
             public void run() {
                 switch (call.method) {
@@ -54,7 +54,9 @@ public class FlutterPluginPdfViewerPlugin implements MethodCallHandler {
                         break;
                 }
             }
-        });
+        }));
+        thread.start();
+
     }
 
     private String getNumberOfPages(String filePath) {
