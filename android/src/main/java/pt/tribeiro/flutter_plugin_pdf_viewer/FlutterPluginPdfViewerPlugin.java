@@ -1,81 +1,94 @@
 package pt.tribeiro.flutter_plugin_pdf_viewer;
 
+import android.app.Activity;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.pdf.PdfRenderer;
-import android.os.AsyncTask;
-import android.os.Environment;
-import android.os.Handler;
-import android.os.Looper;
 import android.os.ParcelFileDescriptor;
-import android.util.Log;
+import android.support.annotation.NonNull;
+
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import io.flutter.plugin.common.MethodCall;
 import io.flutter.plugin.common.MethodChannel;
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler;
 import io.flutter.plugin.common.MethodChannel.Result;
 import io.flutter.plugin.common.PluginRegistry.Registrar;
-import android.graphics.ColorMatrix;
-import android.graphics.ColorMatrixColorFilter;
 
 /**
  * FlutterPluginPdfViewerPlugin
  */
 public class FlutterPluginPdfViewerPlugin implements MethodCallHandler {
     private static Registrar instance;
-    private static  Handler handler;
+    private ExecutorService executor;
+    private static Activity activity;
+
     /**
      * Plugin registration.
      */
     public static void registerWith(Registrar registrar) {
         final MethodChannel channel = new MethodChannel(registrar.messenger(), "flutter_plugin_pdf_viewer");
         instance = registrar;
+        activity = registrar.activity();
         channel.setMethodCallHandler(new FlutterPluginPdfViewerPlugin());
-        handler = new Handler(Looper.getMainLooper());
     }
 
     @Override
     public void onMethodCall(final MethodCall call, final Result result) {
-        handler.post(new Runnable() {
+        switch (call.method) {
+            case "getNumberOfPages":
+                getNumberOfPages((String) call.argument("filePath"), result);
+                break;
+            case "getPage":
+                getPage((String) call.argument("filePath"), (int) call.argument("pageNumber"), result);
+                break;
+            default:
+                result.notImplemented();
+                break;
+        }
+    }
+
+    private synchronized void io(@NonNull Runnable runnable) {
+        if (executor == null) {
+            executor = Executors.newCachedThreadPool();
+        }
+        executor.execute(runnable);
+    }
+
+    private void ui(@NonNull Runnable runnable) {
+        activity.runOnUiThread(runnable);
+    }
+
+
+    private void getNumberOfPages(final String filePath, final Result result) {
+
+        io(new Runnable() {
             @Override
             public void run() {
-                switch (call.method) {
-                    case "getNumberOfPages":
-                        result.success(getNumberOfPages((String) call.argument("filePath")));
-                        break;
-                    case "getPage":
-                        result.success(getPage((String) call.argument("filePath"), (int) call.argument("pageNumber")));
-                        break;
-                    default:
-                        result.notImplemented();
-                        break;
+                File pdf = new File(filePath);
+                try {
+                    PdfRenderer renderer = new PdfRenderer(ParcelFileDescriptor.open(pdf, ParcelFileDescriptor.MODE_READ_ONLY));
+                    final int pageCount = renderer.getPageCount();
+                    ui(new Runnable() {
+                        @Override
+                        public void run() {
+                            result.success(String.format("%d", pageCount));
+                        }
+                    });
+                } catch (Exception ex) {
+                    ex.printStackTrace();
                 }
             }
         });
     }
 
-    private String getNumberOfPages(String filePath) {
-        File pdf = new File(filePath);
-        try {
-            PdfRenderer renderer = new PdfRenderer(ParcelFileDescriptor.open(pdf, ParcelFileDescriptor.MODE_READ_ONLY));
-            Bitmap bitmap;
-            final int pageCount = renderer.getPageCount();
-
-
-            return String.format("%d", pageCount);
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        }
-        return null;
-    }
-
     private String createTempPreview(Bitmap bmp, String name, int page) {
-        String filePath = name.substring(name.lastIndexOf('/') + 1);
-        filePath = name.substring(name.lastIndexOf('.'));
+        final String filePath = name.substring(name.lastIndexOf('.'));
         File file;
         try {
             String fileName = String.format("%s-%d.png", filePath, page);
@@ -92,42 +105,51 @@ public class FlutterPluginPdfViewerPlugin implements MethodCallHandler {
     }
 
 
-    private String getPage(String filePath, int pageNumber) {
-        File pdf = new File(filePath);
-        try {
-            PdfRenderer renderer = new PdfRenderer(ParcelFileDescriptor.open(pdf, ParcelFileDescriptor.MODE_READ_ONLY));
-            final int pageCount = renderer.getPageCount();
-            if (pageNumber > pageCount) {
-                pageNumber = pageCount;
+    private void getPage(final String filePath, final int page, final Result result) {
+        io(new Runnable() {
+            @Override
+            public void run() {
+                File pdf = new File(filePath);
+                try {
+                    PdfRenderer renderer = new PdfRenderer(ParcelFileDescriptor.open(pdf, ParcelFileDescriptor.MODE_READ_ONLY));
+                    final int pageCount = renderer.getPageCount();
+                    int pageNumber = page > pageCount ? pageCount : page;
+
+                    PdfRenderer.Page page = renderer.openPage(--pageNumber);
+
+                    double width = instance.activity().getResources().getDisplayMetrics().densityDpi * page.getWidth();
+                    double height = instance.activity().getResources().getDisplayMetrics().densityDpi * page.getHeight();
+                    final double docRatio = width / height;
+
+                    width = 2048;
+                    height = (int) (width / docRatio);
+                    final Bitmap bitmap = Bitmap.createBitmap((int) width, (int) height, Bitmap.Config.ARGB_8888);
+                    // Change background to white
+                    Canvas canvas = new Canvas(bitmap);
+                    canvas.drawColor(Color.WHITE);
+                    // Render to bitmap
+                    page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY);
+                    final int tempPage = pageNumber;
+                    try {
+                        ui(new Runnable() {
+                            @Override
+                            public void run() {
+                                result.success(createTempPreview(bitmap, filePath, tempPage));
+                            }
+                        });
+                    } finally {
+                        // close the page
+                        page.close();
+                        // close the renderer
+                        renderer.close();
+                    }
+                } catch (Exception ex) {
+                    System.out.println(ex.getMessage());
+                    ex.printStackTrace();
+                }
             }
+        });
 
-            PdfRenderer.Page page = renderer.openPage(--pageNumber);
 
-            double width = instance.activity().getResources().getDisplayMetrics().densityDpi * page.getWidth();
-            double height = instance.activity().getResources().getDisplayMetrics().densityDpi * page.getHeight();
-            final double docRatio = width / height;
-
-            width = 2048;
-            height = (int) (width / docRatio);
-            Bitmap bitmap = Bitmap.createBitmap((int) width, (int) height, Bitmap.Config.ARGB_8888);
-            // Change background to white
-            Canvas canvas = new Canvas(bitmap);
-            canvas.drawColor(Color.WHITE);
-            // Render to bitmap
-            page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY);
-            try {
-                return createTempPreview(bitmap, filePath, pageNumber);
-            } finally {
-                // close the page
-                page.close();
-                // close the renderer
-                renderer.close();
-            }
-        } catch (Exception ex) {
-            System.out.println(ex.getMessage());
-            ex.printStackTrace();
-        }
-
-        return null;
     }
 }
