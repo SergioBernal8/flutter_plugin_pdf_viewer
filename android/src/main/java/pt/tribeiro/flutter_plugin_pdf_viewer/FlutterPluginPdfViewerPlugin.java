@@ -130,10 +130,11 @@ public class FlutterPluginPdfViewerPlugin implements MethodCallHandler {
                     page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY);
                     final int tempPage = pageNumber;
                     try {
+                        final String tempPath = createTempPreview(bitmap, filePath, tempPage);
                         ui(new Runnable() {
                             @Override
                             public void run() {
-                                result.success(createTempPreview(bitmap, filePath, tempPage));
+                                result.success(tempPath);
                             }
                         });
                     } finally {
