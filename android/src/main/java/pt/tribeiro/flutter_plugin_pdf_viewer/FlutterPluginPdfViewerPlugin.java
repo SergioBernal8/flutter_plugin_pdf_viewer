@@ -27,7 +27,6 @@ import io.flutter.plugin.common.PluginRegistry.Registrar;
 public class FlutterPluginPdfViewerPlugin implements MethodCallHandler {
     private static Registrar instance;
     private ExecutorService executor;
-    private static Activity activity;
 
     /**
      * Plugin registration.
@@ -35,7 +34,6 @@ public class FlutterPluginPdfViewerPlugin implements MethodCallHandler {
     public static void registerWith(Registrar registrar) {
         final MethodChannel channel = new MethodChannel(registrar.messenger(), "flutter_plugin_pdf_viewer");
         instance = registrar;
-        activity = registrar.activity();
         channel.setMethodCallHandler(new FlutterPluginPdfViewerPlugin());
     }
 
@@ -62,7 +60,7 @@ public class FlutterPluginPdfViewerPlugin implements MethodCallHandler {
     }
 
     private void ui(@NonNull Runnable runnable) {
-        activity.runOnUiThread(runnable);
+        instance.activity().runOnUiThread(runnable);
     }
 
 
