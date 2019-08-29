@@ -10,11 +10,11 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  flutter_cache_manager: ^0.3.2
+  flutter_cache_manager: ^1.0.0
   numberpicker: ^1.0.0
-  path_provider: ^0.5.0
+  path_provider: ^1.1.0
   rxdart: ^0.21.0
-  flutter_advanced_networkimage: ^0.4.15
+  flutter_advanced_networkimage: ^0.5.0
 
 flutter:
   plugin:
